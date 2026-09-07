@@ -83,6 +83,40 @@ final class EmberTerminal: LocalProcessTerminalView {
     }
 }
 
+// Output from a command (including a remote SSH host or an untrusted file) is
+// not user consent to read or replace the system clipboard. Keep this proxy
+// separate from the native Copy/Paste actions, which remain user initiated.
+final class TerminalOutputPolicy: TerminalViewDelegate {
+    private weak var upstream: TerminalViewDelegate?
+
+    init(upstream: TerminalViewDelegate) { self.upstream = upstream }
+
+    func clipboardRead(source: TerminalView) -> Data? { nil }
+    func clipboardCopy(source: TerminalView, content: Data) {}
+
+    func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
+        upstream?.sizeChanged(source: source, newCols: newCols, newRows: newRows)
+    }
+    func setTerminalTitle(source: TerminalView, title: String) {
+        upstream?.setTerminalTitle(source: source, title: title)
+    }
+    func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {
+        upstream?.hostCurrentDirectoryUpdate(source: source, directory: directory)
+    }
+    func send(source: TerminalView, data: ArraySlice<UInt8>) { upstream?.send(source: source, data: data) }
+    func scrolled(source: TerminalView, position: Double) { upstream?.scrolled(source: source, position: position) }
+    func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {
+        upstream?.requestOpenLink(source: source, link: link, params: params)
+    }
+    func bell(source: TerminalView) { upstream?.bell(source: source) }
+    func iTermContent(source: TerminalView, content: ArraySlice<UInt8>) {
+        upstream?.iTermContent(source: source, content: content)
+    }
+    func rangeChanged(source: TerminalView, startY: Int, endY: Int) {
+        upstream?.rangeChanged(source: source, startY: startY, endY: endY)
+    }
+}
+
 final class TerminalController: NSObject, LocalProcessTerminalViewDelegate {
     let panel: TerminalPanel
     let terminal: EmberTerminal
@@ -96,6 +130,7 @@ final class TerminalController: NSObject, LocalProcessTerminalViewDelegate {
     var workingDirectory: URL
     private var started = false
     private var stopping = false
+    private let outputPolicy: TerminalOutputPolicy
 
     init(directory: URL, size: CGSize) {
         workingDirectory = directory
@@ -103,7 +138,9 @@ final class TerminalController: NSObject, LocalProcessTerminalViewDelegate {
             contentRect: CGRect(origin: .zero, size: size), styleMask: [.borderless, .resizable], backing: .buffered,
             defer: false)
         terminal = EmberTerminal(frame: CGRect(x: 24, y: 42, width: size.width - 48, height: size.height - 108))
+        outputPolicy = TerminalOutputPolicy(upstream: terminal)
         super.init()
+        terminal.terminalDelegate = outputPolicy
         panel.title = "\(PetDefinition.current.displayName) Terminal"
         panel.isOpaque = false
         panel.backgroundColor = .clear

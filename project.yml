@@ -30,17 +30,23 @@ targets:
       properties:
         CFBundleDisplayName: Pet Terminal
         CFBundleName: Pet Terminal
-        CFBundleShortVersionString: '1.0.0'
-        CFBundleVersion: '1'
+        CFBundleShortVersionString: '1.0.1'
+        CFBundleVersion: '2'
         CFBundleIconFile: AppIcon
         LSUIElement: true
         NSHighResolutionCapable: true
         NSPrincipalClass: NSApplication
         NSHumanReadableCopyright: Pet Terminal
     settings:
-      PRODUCT_NAME: Pet Terminal
-      PRODUCT_MODULE_NAME: PetTerminal
-      COMBINE_HIDPI_IMAGES: YES
+      base:
+        PRODUCT_NAME: Pet Terminal
+        PRODUCT_MODULE_NAME: PetTerminal
+        COMBINE_HIDPI_IMAGES: YES
+      configs:
+        Release:
+          DEPLOYMENT_POSTPROCESSING: YES
+          STRIP_INSTALLED_PRODUCT: YES
+          STRIP_STYLE: non-global
   PetTerminalTests:
     type: bundle.unit-test
     platform: macOS

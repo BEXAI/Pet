@@ -17,5 +17,16 @@ xcuserdata/
 !.env.example
 *.p12
 *.p8
+*.pfx
+*.pem
+*.key
 *.mobileprovision
 *.provisionprofile
+*.cer
+*.crt
+*.keychain*
+.zsh_history
+.bash_history
+.git-credentials
+.netrc
+.npmrc

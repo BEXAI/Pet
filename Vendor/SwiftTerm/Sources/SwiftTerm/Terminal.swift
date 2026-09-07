@@ -6629,7 +6629,6 @@ open class Terminal {
             buffer.yDisp = buffer.yBase
         }
 
-        //buffer.dump ()
         // Flag rows that need updating
         updateRange (scrollTop, scrolling: true)
         updateRange (scrollBottom, scrolling: true)

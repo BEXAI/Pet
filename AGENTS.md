@@ -12,5 +12,6 @@ This repository is a native macOS desktop pet with a real local terminal. Start 
 - Retain the original sprite silhouette and alpha-aware click-through. Review new artwork at actual pet size and in motion. Directional poses go clockwise from up; they are not animation frames to play sequentially.
 - The `visor` renderer is specialized for Violet Ember's dark screen face. For other art, use `directional` or `off`, or implement and verify an appropriate character-specific renderer. Do not claim universal eye detection.
 - Only the first four animation rows currently drive desktop behavior. Other rows remain available in the atlas; they do not automatically reflect an AI agent's activity.
+- Preserve `TerminalOutputPolicy`: untrusted terminal output must not read or replace the system clipboard. Keep ordinary user-initiated Copy/Paste functional. Release packages must pass `scripts/check-package.sh`; do not include dSYMs or build logs in public downloads.
 - Keep dependencies pinned and retain their license notices. Do not add API accounts, telemetry, remote command execution, or background network features unless the user requests them.
 - For a requested public release, review the staged diff and test the exact distributable source. A macOS app packaged by the helper is ad-hoc signed, not notarized; describe that accurately.

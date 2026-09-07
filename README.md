@@ -81,7 +81,7 @@ Build products and logs go into a checkout-specific directory under `~/Library/D
 | **Bring Pet Here** | Bring the pet to the screen containing your mouse. |
 | **Quit Pet Terminal** | Close this app and its own shell session. |
 
-The shell starts clean with `zsh -f` so startup scripts cannot silently change the selected folder. Standard system and Homebrew paths are available. Run `exec zsh -l` inside it if you want your normal login profile. Terminal programs can set their own ANSI colors even when the default text is magenta.
+The shell starts with `zsh -f`, which skips the user’s normal startup files; the system-wide `/etc/zshenv` can still run. Standard system and Homebrew paths are available. Run `exec zsh -l` inside it if you want your normal login profile. Terminal programs can set their own ANSI colors even when the default text is magenta.
 
 ## What's in the repo
 
@@ -130,7 +130,9 @@ Fork this repo or use **Use this template**, customize it, and share the resulti
 
 ## Scope and privacy
 
-The app runs local shell commands with your user account's permissions. It has no built-in AI service, telemetry, remote control server, transcript recording, or automatic login item. Commands you run may access files and the network. Preferences such as window position and the selected working folder are stored locally in macOS UserDefaults under `com.bexai.petterminal`.
+The app runs local shell commands with your user account's permissions. It has no built-in AI service, telemetry, remote control server, transcript recording, or automatic login item. Terminal-output clipboard read/write requests (OSC 52) are blocked; deliberate Copy/Paste actions still work. Commands you run may access files and the network. Preferences such as window position and the selected working folder are stored locally in macOS UserDefaults under `com.bexai.petterminal`.
+
+No creator credentials or personal preferences are required or bundled. The repository remains publicly attributed to BEXAI, and upstream authors retain their license credits. This is not an anonymous browsing or networking tool. See the [source, package, and privacy audit](docs/SECURITY-AUDIT.md) for the checks and limitations.
 
 This project is macOS-only and is not an official OpenAI product, a modification of ChatGPT's built-in pet, or an iPhone app. Runtime validation has used Apple Silicon; Intel is compiled but not yet manually exercised. See [validation coverage](docs/TESTING.md).
 

@@ -157,7 +157,7 @@ final class ConfigurationTests: XCTestCase {
         XCTAssertEqual(pet.terminal.background.values, [0, 0, 0, 0])
     }
     func testRejectsUnsafePathsAndUnsupportedGeometry() throws {
-        for path in ["../cat.png", "/tmp/cat.png", "folder\\cat.webp", "cat.jpg"] {
+        for path in ["../cat.png", "/tmp/cat.png", "folder\\cat.webp", "cat.jpg", "cat\n.png", "cat\u{0}.png"] {
             var values = base
             values["spritesheetPath"] = path
             XCTAssertThrowsError(try decode(values))
@@ -166,8 +166,10 @@ final class ConfigurationTests: XCTestCase {
         values["spriteVersionNumber"] = 1
         XCTAssertThrowsError(try decode(values))
         values = base
-        values["id"] = "cat%#"
-        XCTAssertThrowsError(try decode(values))
+        for id in ["cat%#", "cat\n", "cat\r\n", "cat\u{0}"] {
+            values["id"] = id
+            XCTAssertThrowsError(try decode(values))
+        }
     }
     func testValidatesRGBAAndGazeMode() throws {
         for json in ["[0,0,0]", "[0,0,0,1.1]", "[-1,0,0,1]"] {
@@ -201,6 +203,50 @@ final class ProcessProbe: LocalProcessDelegate {
         output?(text)
     }
     func processTerminated(_ source: LocalProcess, exitCode: Int32?) { exited?() }
+}
+
+private final class ClipboardProbe: TerminalViewDelegate {
+    var clipboardReads = 0
+    var clipboardWrites = 0
+    var replies: [UInt8] = []
+    func clipboardRead(source: TerminalView) -> Data? {
+        clipboardReads += 1
+        return Data("test-only clipboard".utf8)
+    }
+    func clipboardCopy(source: TerminalView, content: Data) { clipboardWrites += 1 }
+    func send(source: TerminalView, data: ArraySlice<UInt8>) { replies.append(contentsOf: data) }
+    func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {}
+    func setTerminalTitle(source: TerminalView, title: String) {}
+    func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
+    func scrolled(source: TerminalView, position: Double) {}
+    func rangeChanged(source: TerminalView, startY: Int, endY: Int) {}
+}
+
+final class TerminalPrivacyTests: XCTestCase {
+    @MainActor func testOSC52OutputCannotReadOrReplaceClipboard() {
+        let view = TerminalView(frame: CGRect(x: 0, y: 0, width: 500, height: 300))
+        let probe = ClipboardProbe()
+        let policy = TerminalOutputPolicy(upstream: probe)
+        view.terminalDelegate = policy
+        // Feed real escape sequences through the parser, without accessing the
+        // Mac's pasteboard. Both BEL and ST terminators must remain denied.
+        for terminator in ["\u{7}", "\u{1b}\\"] {
+            view.feed(text: "\u{1b}]52;c;?\(terminator)")
+            view.feed(text: "\u{1b}]52;c;\(Data("replacement".utf8).base64EncodedString())\(terminator)")
+        }
+        XCTAssertEqual(probe.clipboardReads, 0)
+        XCTAssertEqual(probe.clipboardWrites, 0)
+        XCTAssertTrue(probe.replies.isEmpty, "Terminal output leaked a clipboard response to the child process")
+        view.send(txt: "user input")
+        XCTAssertEqual(String(decoding: probe.replies, as: UTF8.self), "user input")
+    }
+
+    @MainActor func testControllerInstallsClipboardPolicy() {
+        let controller = TerminalController(
+            directory: URL(fileURLWithPath: "/private/tmp"), size: CGSize(width: 560, height: 340))
+        XCTAssertTrue(controller.terminal.terminalDelegate is TerminalOutputPolicy)
+        XCTAssertNil(controller.terminal.terminalDelegate?.clipboardRead(source: controller.terminal))
+    }
 }
 
 final class TerminalIntegrationTests: XCTestCase {
@@ -270,7 +316,8 @@ final class TerminalIntegrationTests: XCTestCase {
         controller.start(shellArguments: ["-f"])
         let pid = controller.terminal.process.shellPid
         XCTAssertGreaterThan(pid, 0)
-        controller.terminal.process.send(data: Array("sleep 20\r".utf8)[...])
+        // Exercise the same delegate path as actual typing, including the output policy.
+        controller.terminal.send(txt: "sleep 20\r")
         let ready = expectation(description: "foreground job started")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { ready.fulfill() }
         wait(for: [ready], timeout: 2)

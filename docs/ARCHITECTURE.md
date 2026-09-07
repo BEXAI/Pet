@@ -24,7 +24,7 @@ flowchart LR
 | `Sources/PetView.swift` | Atlas loading, animation, pointer conversion, dragging, rendering, and alpha-aware hit testing. |
 | `Sources/EyeTracking.swift` | Sixteen-direction selection, neutral zone, hysteresis, and the sample's visor mapping. |
 | `Sources/Geometry.swift` | Visible-screen layout, clamping, attached-terminal placement, bounded movement steps. |
-| `Sources/TerminalPanel.swift` | Native terminal view, transparent neon chrome, resize/pin/folder controls, process lifecycle. |
+| `Sources/TerminalPanel.swift` | Native terminal view, terminal-output clipboard policy, transparent neon chrome, resize/pin/folder controls, process lifecycle. |
 | `Tests/DesktopTests.swift` | Native behavior and PTY checks. |
 
 ## Update loop
@@ -36,6 +36,8 @@ Hit testing follows sprite alpha. In `directional` mode it uses the selected loo
 ## Terminal lifecycle
 
 The terminal is an actual PTY with a clean `zsh -f` shell. The app passes through the launch environment after stripping test and dynamic-loader injection variables, prepends standard Homebrew paths, and sets terminal metadata and a slug-based prompt. It does not persist a transcript.
+
+`TerminalOutputPolicy` sits between the terminal parser and the local-process delegate. It denies OSC 52 clipboard queries and writes, while forwarding PTY input, resizing, title/directory updates, and other normal delegate events. User-initiated native Copy/Paste remains separate. Terminal hyperlinks open only after the user activates them; inspect their destination before opening links from untrusted output.
 
 Hiding a window leaves the PTY alive. Selecting another directory asks before replacing the current shell. App shutdown signals only its owned shell session and foreground process group, then reaps the shell. Keep those ownership checks when extending process handling.
 

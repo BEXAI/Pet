@@ -6,6 +6,8 @@ PET_BUILD_ROOT="${PET_BUILD_ROOT:-$HOME/Library/Developer/Xcode/DerivedData/BEXA
 PET_DERIVED_DATA="$PET_BUILD_ROOT/DerivedData"
 PET_PRODUCT="Pet Terminal"
 PET_SCHEME="PetTerminal"
+# Shared with the build, install, and package entry points that source this file.
+# shellcheck disable=SC2034
 PET_APP="$PET_DERIVED_DATA/Build/Products/Release/$PET_PRODUCT.app"
 
 require_xcode() {

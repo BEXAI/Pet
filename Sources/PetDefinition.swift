@@ -58,7 +58,7 @@ struct PetDefinition: Decodable {
         spritesheetPath = try c.decode(String.self, forKey: .spritesheetPath)
         gazeMode = try c.decodeIfPresent(GazeMode.self, forKey: .gazeMode) ?? .directional
         terminal = try c.decodeIfPresent(TerminalAppearance.self, forKey: .terminal) ?? .neon
-        guard id.range(of: "^[a-z0-9]+(?:-[a-z0-9]+)*$", options: .regularExpression) != nil else {
+        guard id.range(of: "\\A[a-z0-9]+(?:-[a-z0-9]+)*\\z", options: .regularExpression) != nil else {
             throw DecodingError.dataCorruptedError(
                 forKey: .id, in: c, debugDescription: "Use a lowercase pet id, for example moon-cat.")
         }
@@ -74,6 +74,7 @@ struct PetDefinition: Decodable {
                 forKey: .spriteVersionNumber, in: c, debugDescription: "This renderer requires spriteVersionNumber 2.")
         }
         guard !spritesheetPath.contains("/"), !spritesheetPath.contains("\\"),
+            spritesheetPath.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) }),
             ["png", "webp"].contains((spritesheetPath as NSString).pathExtension.lowercased())
         else {
             throw DecodingError.dataCorruptedError(

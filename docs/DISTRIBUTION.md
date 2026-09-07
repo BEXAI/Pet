@@ -20,7 +20,7 @@ git archive --format=zip --prefix=Pet/ --output=dist/Pet-Starter-Source.zip HEAD
 ./scripts/package.sh
 ```
 
-This creates `dist/Pet-Terminal-macOS.zip`. The build is universal (Apple Silicon and Intel) and signed with a local ad-hoc identity. Packaging excludes extended attributes and resource forks that can invalidate the bundle signature when files pass through synced folders.
+This creates `dist/Pet-Terminal-macOS.zip`. The build is universal (Apple Silicon and Intel) and signed with a local ad-hoc identity. Release builds strip local/debug symbols that would otherwise contain builder paths. Every build runs `scripts/check-package.sh` against all bundle files, including both executable architectures, and fails if it finds the builder’s home, checkout, or build directory. Packaging excludes extended attributes and resource forks that can invalidate the bundle signature when files pass through synced folders. Keep dSYMs and build logs private: they intentionally contain debugging paths and are not included in the app ZIP.
 
 The supplied scripts do **not** produce a notarized public binary. They do not request your Apple credentials or disable Gatekeeper. A downloaded prebuilt app may be blocked by macOS; building the source locally is the supported default route. A maintainer who wants normal public binary distribution should add their own Developer ID signing and notarization workflow, following [Apple's Developer ID guidance](https://developer.apple.com/developer-id/) and [notarization documentation](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution).
 
@@ -41,7 +41,7 @@ Different bundle identifiers give installed pets separate preferences. The insta
 
 - Confirm the exact source checkout builds and tests on a Mac.
 - Review the pet at normal size and in all four cardinal gaze directions. Test the real terminal, not only its appearance.
-- Check the Git diff for private paths, keys, certificates, account data, transcripts, and build products.
+- Check the Git diff **and Git history** for private paths, keys, certificates, account data, transcripts, and build products. Use a public GitHub no-reply commit email if you do not want to publish a personal address. A source ZIP excludes Git history; a clone includes it. Review replacement artwork metadata and new release assets too.
 - Keep `LICENSE`, `THIRD_PARTY_NOTICES.md`, and upstream notices intact. Include credits and permissions for any replacement artwork.
 - Report actual architecture/runtime coverage and whether a binary is notarized.
 

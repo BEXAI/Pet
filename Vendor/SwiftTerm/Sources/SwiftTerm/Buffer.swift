@@ -1545,36 +1545,8 @@ public final class Buffer {
         recalculateLinesWithImagesCount()
     }
     
-    static var n = 0
-    
-    func dump ()
-    {
-        var str = ""
-        str += "xDisp=\(xDisp), yDisp=\(yDisp), xBase=\(xBase), yBase=\(yBase)\n"
-        str += "scrollTop=\(scrollTop) scrollBottom=\(scrollBottom)\n"
-        str += "count=\(lines.count) maxLength=\(lines.maxLength)\n"
-        for i in 0..<_lines.getArray().count {
-            var txt: String
-            if let r = _lines.getArray()[i] {
-                txt = r.debugDescription.replacingOccurrences(of: "\u{0}", with: " ")
-            } else {
-                txt = "<empty>"
-            }
-            let flag = i >= yDisp ? ">>" : "  "
-            let istr = String (format: "%03d", i)
-            let cstr = String (format: "%03d", _lines.debugGetCyclicIndex(i))
-            str += "[\(istr):\(cstr)]\(flag)\(txt)\n"
-        }
-        let file = "/Users/miguel/Downloads/Logs/dump-\(Buffer.n)"
-        do {
-            try str.write(to: URL.init (fileURLWithPath: file), atomically: false, encoding: .utf8)
+    // The unused upstream file-dump helper is omitted from this distribution.
 
-        } catch {
-            print ("Could not log the dump() contents to \(file)")
-        }
-        Buffer.n += 1
-    }
-    
     /// Bulk-inserts ASCII characters (all width-1, non-combining).
     /// Returns number of bytes consumed. Returns 0 if insert mode is active.
     func insertAsciiRun(
