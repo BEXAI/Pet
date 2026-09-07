@@ -16,10 +16,10 @@ jobs:
   native:
     runs-on: macos-latest
     timeout-minutes: 25
-    env:
-      PET_BUILD_ROOT: ${{ runner.temp }}/pet-build
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Set build directory
+        run: printf 'PET_BUILD_ROOT=%s/pet-build\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Show native toolchain
         run: xcodebuild -version
       - name: Validate and run native tests
