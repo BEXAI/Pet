@@ -1,0 +1,40 @@
+name: macOS build and tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    runs-on: macos-latest
+    timeout-minutes: 25
+    env:
+      PET_BUILD_ROOT: ${{ runner.temp }}/pet-build
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Show native toolchain
+        run: xcodebuild -version
+      - name: Validate and run native tests
+        run: ./scripts/test.sh
+      - name: Build and package Release
+        run: ./scripts/package.sh
+      - name: Upload local-build artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Pet-Terminal-macOS-local-build
+          path: dist/Pet-Terminal-macOS.zip
+          if-no-files-found: error
+      - name: Upload build logs
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-build-logs
+          path: ${{ runner.temp }}/pet-build/logs/

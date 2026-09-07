@@ -1,0 +1,10 @@
+* text=auto
+*.sh text eol=lf
+*.swift text eol=lf
+*.md text eol=lf
+*.webp binary
+*.png binary
+*.icns binary
+
+# Keep upstream formatting and exclude vendored files from language statistics.
+Vendor/** -whitespace linguist-vendored

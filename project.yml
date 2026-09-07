@@ -1,0 +1,63 @@
+name: PetTerminal
+options:
+  deploymentTarget:
+    macOS: '14.0'
+  createIntermediateGroups: true
+packages:
+  SwiftTerm:
+    path: Vendor/SwiftTerm
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    CODE_SIGN_IDENTITY: '-'
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ''
+    ENABLE_APP_SANDBOX: NO
+    ENABLE_HARDENED_RUNTIME: YES
+    PRODUCT_BUNDLE_IDENTIFIER: com.bexai.petterminal
+targets:
+  PetTerminal:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources
+      - path: Resources
+        buildPhase: resources
+    dependencies:
+      - package: SwiftTerm
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: Pet Terminal
+        CFBundleName: Pet Terminal
+        CFBundleShortVersionString: '1.0.0'
+        CFBundleVersion: '1'
+        CFBundleIconFile: AppIcon
+        LSUIElement: true
+        NSHighResolutionCapable: true
+        NSPrincipalClass: NSApplication
+        NSHumanReadableCopyright: Pet Terminal
+    settings:
+      PRODUCT_NAME: Pet Terminal
+      PRODUCT_MODULE_NAME: PetTerminal
+      COMBINE_HIDPI_IMAGES: YES
+  PetTerminalTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [Tests]
+    dependencies:
+      - target: PetTerminal
+      - package: SwiftTerm
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.bexai.petterminal.tests
+      GENERATE_INFOPLIST_FILE: YES
+      TEST_HOST: $(BUILT_PRODUCTS_DIR)/Pet Terminal.app/Contents/MacOS/Pet Terminal
+      BUNDLE_LOADER: $(TEST_HOST)
+schemes:
+  PetTerminal:
+    build:
+      targets:
+        PetTerminal: all
+        PetTerminalTests: [test]
+    test:
+      targets: [PetTerminalTests]
