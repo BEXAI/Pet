@@ -72,6 +72,8 @@ Build products and logs go into a checkout-specific directory under `~/Library/D
 | Control | What it does |
 | --- | --- |
 | Click the pet | Show or hide the terminal; hiding preserves its session. |
+| Hover over the pet → **Dictate** | Speak into a live preview, then choose **Stop & Insert** to type into the embedded terminal. |
+| **⇧⌘D** in the terminal | Start or stop dictation. **Esc** cancels it. |
 | Drag the pet | Move the pet and attached terminal. |
 | **Pin** / drag the terminal header | Keep the terminal in place. |
 | Lower-right terminal grip | Resize the terminal. |
@@ -82,6 +84,12 @@ Build products and logs go into a checkout-specific directory under `~/Library/D
 | **Quit Pet Terminal** | Close this app and its own shell session. |
 
 The shell starts with `zsh -f`, which skips the user’s normal startup files; the system-wide `/etc/zshenv` can still run. Standard system and Homebrew paths are available. Run `exec zsh -l` inside it if you want your normal login profile. Terminal programs can set their own ANSI colors even when the default text is magenta.
+
+### Voice dictation
+
+Hover over the character to reveal its **Dictate** button. The button remains reachable as you move the pointer onto it. Click it to show the terminal and start microphone setup. Once the preview says **Listening**, speak, then click **Stop & Insert**. The completed text enters the current terminal input without pressing Return. You can also use the microphone in the terminal header or **⇧⌘D** while the terminal is focused.
+
+Dictation uses Apple's on-device SpeechTranscriber on supported Macs running macOS 26 or later. The ordinary pet and terminal still support macOS 14. Microphone permission is requested on first use; an available language model may need a download. The app does not save audio or keep a dictation history. See [dictation behavior and implementation](docs/DICTATION.md).
 
 ## What's in the repo
 

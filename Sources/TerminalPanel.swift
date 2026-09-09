@@ -2,6 +2,54 @@ import AppKit
 import Darwin
 import SwiftTerm
 
+enum DictationInput {
+    /// Dictation inserts prose, never terminal controls or an implicit Return.
+    static func singleLine(_ text: String) -> String {
+        var result = ""
+        var pendingSpace = false
+        for scalar in text.unicodeScalars {
+            if CharacterSet.whitespacesAndNewlines.contains(scalar)
+                || scalar.value < 0x20 || (0x7f...0x9f).contains(scalar.value)
+            {
+                pendingSpace = !result.isEmpty
+                continue
+            }
+            if pendingSpace { result.append(" ") }
+            result.unicodeScalars.append(scalar)
+            pendingSpace = false
+        }
+        return result
+    }
+
+    static func bytes(for text: String, bracketedPaste: Bool) -> [UInt8] {
+        let text = singleLine(text)
+        guard !text.isEmpty else { return [] }
+        let bytes = Array(text.utf8)
+        return bracketedPaste
+            ? EscapeSequences.bracketedPasteStart + bytes + EscapeSequences.bracketedPasteEnd : bytes
+    }
+}
+
+struct DictationInsertionTarget: Equatable {
+    let generation: UInt64
+    let shellPID: Int32
+    let foregroundGroup: Int32
+}
+
+struct DictationInsertionGate {
+    private(set) var target: DictationInsertionTarget?
+
+    mutating func begin(target: DictationInsertionTarget) { self.target = target }
+    mutating func invalidate() { target = nil }
+
+    /// A capture can insert once, into the same visible, focused terminal job.
+    mutating func consume(current: DictationInsertionTarget?, canReceiveInput: Bool) -> Bool {
+        guard let target, target == current, canReceiveInput else { return false }
+        self.target = nil
+        return true
+    }
+}
+
 enum EmberStyle {
     static var border: NSColor { PetDefinition.current.terminal.border.color }
     static var glow: NSColor { PetDefinition.current.terminal.glow.color }
@@ -10,8 +58,14 @@ enum EmberStyle {
 }
 
 final class TerminalPanel: NSPanel {
+    var onCancelDictation: (() -> Bool)?
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .keyDown, event.keyCode == 53, onCancelDictation?() == true { return }
+        super.sendEvent(event)
+    }
 }
 
 final class NeonChrome: NSView {
@@ -66,8 +120,17 @@ final class NeonChrome: NSView {
 }
 
 final class EmberTerminal: LocalProcessTerminalView {
+    var onToggleDictation: (() -> Void)?
+
     // macOS shortcuts stay native while ordinary control keys go to the PTY.
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if modifiers.intersection([.command, .shift, .control, .option]) == [.command, .shift],
+            event.charactersIgnoringModifiers?.lowercased() == "d", let onToggleDictation
+        {
+            onToggleDictation()
+            return true
+        }
         if event.modifierFlags.contains(.command) {
             switch event.charactersIgnoringModifiers?.lowercased() {
             case "c":
@@ -80,6 +143,14 @@ final class EmberTerminal: LocalProcessTerminalView {
             }
         }
         return super.performKeyEquivalent(with: event)
+    }
+
+    @discardableResult
+    func insertDictatedText(_ text: String) -> Bool {
+        let bytes = DictationInput.bytes(for: text, bracketedPaste: getTerminal().bracketedPasteMode)
+        guard !bytes.isEmpty else { return false }
+        send(data: bytes[...])
+        return true
     }
 }
 
@@ -117,12 +188,15 @@ final class TerminalOutputPolicy: TerminalViewDelegate {
     }
 }
 
-final class TerminalController: NSObject, LocalProcessTerminalViewDelegate {
+// SwiftTerm's local view uses LocalProcess's default main queue for output and exit callbacks.
+@MainActor final class TerminalController: NSObject, @preconcurrency LocalProcessTerminalViewDelegate {
     let panel: TerminalPanel
     let terminal: EmberTerminal
     let heading = NSTextField(labelWithString: "\(PetDefinition.current.displayName) · Terminal")
     let footer = NSTextField(labelWithString: "zsh · local session")
     let pinButton = NSButton(title: "Pin", target: nil, action: nil)
+    let dictation = DictationController()
+    var onDictationUpdate: (() -> Void)?
     var onHide: (() -> Void)?
     var onPin: (() -> Void)?
     var onFolder: (() -> Void)?
@@ -131,6 +205,14 @@ final class TerminalController: NSObject, LocalProcessTerminalViewDelegate {
     private var started = false
     private var stopping = false
     private let outputPolicy: TerminalOutputPolicy
+    private let dictationButton = NSButton(title: "Dictate", target: nil, action: nil)
+    private let dictationPreview = NSTextField(labelWithString: "")
+    private let dictationCancel = NSButton(title: "Cancel", target: nil, action: nil)
+    private let dictationInsert = NSButton(title: "Insert", target: nil, action: nil)
+    private var sessionGeneration: UInt64 = 0
+    private var insertionGate = DictationInsertionGate()
+    private var dictationNotice = ""
+    private var dictationPreviewVisible = false
 
     init(directory: URL, size: CGSize) {
         workingDirectory = directory
@@ -162,7 +244,7 @@ final class TerminalController: NSObject, LocalProcessTerminalViewDelegate {
         terminal.processDelegate = self
         terminal.setAccessibilityLabel("\(PetDefinition.current.displayName) local terminal")
         chrome.addSubview(terminal)
-        heading.frame = CGRect(x: 26, y: size.height - 47, width: size.width - 255, height: 25)
+        heading.frame = CGRect(x: 26, y: size.height - 47, width: max(40, size.width - 293), height: 25)
         heading.autoresizingMask = [.width, .minYMargin]
         heading.font = .systemFont(ofSize: 12, weight: .medium)
         heading.textColor = EmberStyle.text
@@ -187,10 +269,48 @@ final class TerminalController: NSObject, LocalProcessTerminalViewDelegate {
         }
         pinButton.target = self
         pinButton.action = #selector(pin)
+        dictationButton.frame = CGRect(x: size.width - 254, y: size.height - 48, width: 32, height: 28)
+        dictationButton.autoresizingMask = [.minXMargin, .minYMargin]
+        dictationButton.imagePosition = .imageOnly
+        dictationButton.isBordered = false
+        dictationButton.contentTintColor = EmberStyle.text
+        dictationButton.target = self
+        dictationButton.action = #selector(toggleDictation)
+        chrome.addSubview(dictationButton)
+        dictationPreview.frame = CGRect(x: 26, y: 46, width: max(50, size.width - 192), height: 20)
+        dictationPreview.autoresizingMask = [.width]
+        dictationPreview.font = .systemFont(ofSize: 11)
+        dictationPreview.textColor = EmberStyle.text
+        dictationPreview.lineBreakMode = .byTruncatingMiddle
+        dictationPreview.setAccessibilityLabel("Dictation preview")
+        chrome.addSubview(dictationPreview)
+        for (button, offset, action) in [
+            (dictationInsert, 154.0, #selector(insertRetainedDictation)),
+            (dictationCancel, 90.0, #selector(cancelDictation)),
+        ] {
+            button.frame = CGRect(x: size.width - CGFloat(offset), y: 41, width: 60, height: 28)
+            button.autoresizingMask = [.minXMargin]
+            button.isBordered = false
+            button.contentTintColor = EmberStyle.text
+            button.target = self
+            button.action = action
+            chrome.addSubview(button)
+        }
+        terminal.onToggleDictation = { [weak self] in self?.toggleDictation() }
+        panel.onCancelDictation = { [weak self] in
+            guard let self, self.dictationPreviewVisible else { return false }
+            self.cancelDictation()
+            return true
+        }
+        dictation.onUpdate = { [weak self] in self?.updateDictationPresentation() }
+        dictation.onFinalText = { [weak self] text in self?.receiveDictatedText(text) }
+        updateDictationPresentation()
     }
 
     func start(shellArguments: [String] = ["-f"]) {
         guard !started else { return }
+        sessionGeneration &+= 1
+        insertionGate.invalidate()
         started = true
         stopping = false
         var environment = ProcessInfo.processInfo.environment
@@ -219,6 +339,8 @@ final class TerminalController: NSObject, LocalProcessTerminalViewDelegate {
         panel.makeFirstResponder(terminal)
     }
     func stop(completion: @escaping () -> Void) {
+        sessionGeneration &+= 1
+        interruptDictation()
         guard started, !stopping else {
             completion()
             return
@@ -254,6 +376,139 @@ final class TerminalController: NSObject, LocalProcessTerminalViewDelegate {
             }
         }
     }
+
+    @objc func toggleDictation() {
+        if dictation.isBusy {
+            // A toolbar click can take first responder under Full Keyboard Access.
+            // This is an explicit stop action; asynchronous results never steal focus.
+            if panel.isVisible && panel.isKeyWindow && NSApp.isActive { panel.makeFirstResponder(terminal) }
+            dictation.stopAndInsert()
+            return
+        }
+        if case .draft = dictation.state {
+            insertRetainedDictation()
+            return
+        }
+        guard focusExistingSession(), let target = currentDictationTarget() else {
+            dictationNotice = "Open a terminal session before dictating."
+            updateDictationPresentation()
+            return
+        }
+        dictationNotice = ""
+        insertionGate.begin(target: target)
+        dictation.start()
+    }
+
+    func interruptDictation() {
+        insertionGate.invalidate()
+        if dictation.isBusy || !dictation.transcript.isEmpty {
+            dictationNotice = "Dictation paused. Return to the terminal to insert the draft."
+            dictation.interrupt()
+        }
+        updateDictationPresentation()
+    }
+
+    @objc func cancelDictation() {
+        insertionGate.invalidate()
+        dictationNotice = ""
+        dictation.cancel()
+        updateDictationPresentation()
+    }
+
+    @objc private func insertRetainedDictation() {
+        guard !dictation.isBusy, !dictation.transcript.isEmpty,
+            focusExistingSession(), let target = currentDictationTarget()
+        else {
+            dictationNotice = "Open a terminal session to insert this draft."
+            updateDictationPresentation()
+            return
+        }
+        dictationNotice = ""
+        insertionGate.begin(target: target)
+        dictation.insertDraft()
+    }
+
+    private func focusExistingSession() -> Bool {
+        guard currentDictationTarget() != nil else { return false }
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKeyAndOrderFront(nil)
+        panel.makeFirstResponder(terminal)
+        return true
+    }
+
+    private func currentDictationTarget() -> DictationInsertionTarget? {
+        guard started, !stopping, terminal.process.running,
+            terminal.process.shellPid > 0, terminal.process.childfd >= 0
+        else { return nil }
+        let foreground = tcgetpgrp(terminal.process.childfd)
+        guard foreground > 0 else { return nil }
+        return DictationInsertionTarget(
+            generation: sessionGeneration, shellPID: terminal.process.shellPid, foregroundGroup: foreground)
+    }
+
+    private func receiveDictatedText(_ text: String) {
+        let focused = panel.isVisible && panel.isKeyWindow && NSApp.isActive && panel.firstResponder === terminal
+        guard insertionGate.consume(current: currentDictationTarget(), canReceiveInput: focused) else {
+            dictationNotice = "Destination changed. Review the terminal, then choose Insert."
+            dictation.interrupt()
+            updateDictationPresentation()
+            return
+        }
+        if terminal.insertDictatedText(text) {
+            dictationNotice = ""
+        } else {
+            dictationNotice = "No spoken text to insert."
+        }
+        updateDictationPresentation()
+    }
+
+    private func updateDictationPresentation() {
+        let busy = dictation.isBusy
+        let hasDraft = !dictation.transcript.isEmpty
+        let showPreview: Bool
+        if case .idle = dictation.state {
+            showPreview = !dictationNotice.isEmpty
+        } else {
+            showPreview = true
+        }
+        let buttonLabel: String
+        let buttonSymbol: String
+        switch dictation.state {
+        case .draft:
+            buttonLabel = "Insert dictation"
+            buttonSymbol = "arrow.turn.down.left"
+        case .preparing, .listening, .finalizing:
+            buttonLabel = "Stop and insert dictation"
+            buttonSymbol = "stop.fill"
+        case .idle, .failed:
+            buttonLabel = "Dictate into terminal"
+            buttonSymbol = "mic.fill"
+        }
+        dictationButton.image = NSImage(systemSymbolName: buttonSymbol, accessibilityDescription: buttonLabel)
+        dictationButton.toolTip = "\(buttonLabel) (⇧⌘D)"
+        dictationButton.setAccessibilityLabel(buttonLabel)
+        switch dictation.state {
+        case .preparing, .finalizing: dictationButton.isEnabled = false
+        default: dictationButton.isEnabled = true
+        }
+        dictationPreview.stringValue =
+            dictationNotice.isEmpty
+            ? (hasDraft ? dictation.transcript : dictation.statusText) : dictationNotice
+        dictationPreview.toolTip = [dictationNotice, dictation.transcript, dictation.statusText]
+            .filter { !$0.isEmpty }.joined(separator: "\n")
+        dictationPreview.isHidden = !showPreview
+        dictationCancel.isHidden = !showPreview
+        dictationInsert.isHidden = !showPreview || busy || !hasDraft
+        if showPreview != dictationPreviewVisible {
+            dictationPreviewVisible = showPreview
+            let height = panel.contentView?.bounds.height ?? panel.frame.height
+            terminal.frame = CGRect(
+                x: 24, y: showPreview ? 76 : 42, width: panel.contentView!.bounds.width - 48,
+                height: height - (showPreview ? 142 : 108))
+        }
+        onDictationUpdate?()
+    }
+
     @objc private func hide() { onHide?() }
     @objc private func pin() { onPin?() }
     @objc private func folder() { onFolder?() }
@@ -265,6 +520,8 @@ final class TerminalController: NSObject, LocalProcessTerminalViewDelegate {
         if let directory { footer.stringValue = "zsh · \(directory)" }
     }
     func processTerminated(source: TerminalView, exitCode: Int32?) {
+        sessionGeneration &+= 1
+        interruptDictation()
         started = false
         if !stopping {
             footer.stringValue = "Session ended · click Folder to start another"

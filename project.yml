@@ -30,18 +30,20 @@ targets:
       properties:
         CFBundleDisplayName: Pet Terminal
         CFBundleName: Pet Terminal
-        CFBundleShortVersionString: '1.0.1'
-        CFBundleVersion: '2'
+        CFBundleShortVersionString: '1.1.0'
+        CFBundleVersion: '3'
         CFBundleIconFile: AppIcon
         LSUIElement: true
         NSHighResolutionCapable: true
         NSPrincipalClass: NSApplication
         NSHumanReadableCopyright: Pet Terminal
+        NSMicrophoneUsageDescription: Use your microphone to dictate text into your pet's terminal when you choose Dictate.
     settings:
       base:
         PRODUCT_NAME: Pet Terminal
         PRODUCT_MODULE_NAME: PetTerminal
         COMBINE_HIDPI_IMAGES: YES
+        CODE_SIGN_ENTITLEMENTS: PetTerminal.entitlements
       configs:
         Release:
           DEPLOYMENT_POSTPROCESSING: YES

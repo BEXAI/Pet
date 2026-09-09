@@ -2,6 +2,7 @@ import AppKit
 
 @main
 enum PetTerminalMain {
+    @MainActor
     static func main() {
         let app = NSApplication.shared
         let delegate = AppDelegate()
@@ -11,11 +12,12 @@ enum PetTerminalMain {
     }
 }
 
-final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuDelegate {
+@MainActor final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuDelegate {
     let defaults = UserDefaults.standard
     var petPanel: PetPanel!
     var pet: PetView!
     var terminal: TerminalController!
+    var voiceControls: PetVoiceControls!
     var statusItem: NSStatusItem!
     var timer: Timer?
     var target: CGPoint?
@@ -91,6 +93,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         terminal.onHide = { [weak self] in self?.hideTerminal() }
         terminal.onPin = { [weak self] in self?.togglePin() }
         terminal.onFolder = { [weak self] in self?.chooseFolder() }
+        voiceControls = PetVoiceControls()
+        voiceControls.onAction = { [weak self] in self?.toggleDictation() }
+        voiceControls.onCancel = { [weak self] in self?.terminal.cancelDictation() }
+        terminal.onDictationUpdate = { [weak self] in
+            guard let self else { return }
+            self.voiceControls.setState(self.terminal.dictation.state)
+            self.target = nil
+        }
         pet.onClick = { [weak self] in self?.toggleTerminal() }
         pet.onMenu = { [weak self] in self?.makeMenu() ?? NSMenu() }
         pet.onDragState = { [weak self] active in
@@ -154,12 +164,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         lastTick = now
         guard !hidden, !sleeping else { return }
         let underPointer = pet.hasPixel(at: NSEvent.mouseLocation)
+        let usingVoiceControls = voiceControls.update(
+            pointer: NSEvent.mouseLocation, petFrame: petPanel.frame,
+            screen: (petPanel.screen ?? currentScreen()).visibleFrame,
+            petHovered: underPointer, dragging: dragging, time: now)
         petPanel.ignoresMouseEvents = !dragging && !underPointer
         let usingTerminal =
             terminal.panel.isVisible
             && (terminal.panel.isKeyWindow || terminal.panel.inLiveResize
                 || terminal.panel.frame.contains(NSEvent.mouseLocation))
-        let paused = !roam || reducedMotion || dragging || usingTerminal || underPointer || NSApp.modalWindow != nil
+        let paused =
+            !roam || reducedMotion || dragging || usingTerminal || underPointer || usingVoiceControls
+            || terminal.dictation.isBusy || NSApp.modalWindow != nil
         if paused {
             target = nil
             nextMove = max(nextMove, now + 1.4)
@@ -205,6 +221,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         }
     }
     func hideTerminal() {
+        terminal.interruptDictation()
         terminal.panel.orderOut(nil)
         target = nil
         nextMove = ProcessInfo.processInfo.systemUptime + 2
@@ -212,6 +229,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     }
     @objc func showTerminal() {
         if !terminal.panel.isVisible { toggleTerminal() } else { terminal.focus() }
+    }
+    @objc func toggleDictation() {
+        showTerminal()
+        terminal.toggleDictation()
+    }
+    func applicationDidResignActive(_ notification: Notification) {
+        // The system permission alert may temporarily activate another process.
+        // Capture still checks app activation again before starting the microphone.
+        guard terminal?.dictation.isRequestingMicrophonePermission != true else { return }
+        terminal?.interruptDictation()
     }
     @objc func togglePin() {
         pinned.toggle()
@@ -232,6 +259,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     @objc func toggleVisibility() {
         hidden.toggle()
         if hidden {
+            terminal.interruptDictation()
+            voiceControls.hide()
             petPanel.orderOut(nil)
             terminal.panel.orderOut(nil)
         } else {
@@ -268,6 +297,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     }
 
     @objc func chooseFolder() {
+        terminal.interruptDictation()
         let picker = NSOpenPanel()
         picker.canChooseDirectories = true
         picker.canChooseFiles = false
@@ -319,6 +349,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         save()
     }
     @objc func willSleep() {
+        terminal.interruptDictation()
+        voiceControls.hide()
         sleeping = true
         target = nil
     }
@@ -374,6 +406,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         label.isEnabled = false
         menu.addItem(label)
         _ = item("Open Terminal", #selector(showTerminal), "t")
+        _ = item("Voice Dictation…", #selector(toggleDictation))
         _ = item("Choose Terminal Folder…", #selector(chooseFolder))
         menu.addItem(.separator())
         item("Roam", #selector(toggleRoam)).state = roam ? .on : .off
@@ -427,6 +460,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard terminal != nil else { return .terminateNow }
         timer?.invalidate()
+        terminal.cancelDictation()
+        voiceControls.hide()
         save()
         terminal.stop { DispatchQueue.main.async { sender.reply(toApplicationShouldTerminate: true) } }
         return .terminateLater
