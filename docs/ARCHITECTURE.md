@@ -1,6 +1,6 @@
 # Architecture
 
-Pet Terminal is an AppKit accessory app with a menu-bar item and two floating windows. It uses the system's local zsh through SwiftTerm's pseudoterminal implementation.
+Pet Terminal is an AppKit accessory app with a menu-bar item, floating pet and terminal windows, and a small voice-control panel that appears beside the pet on hover. It uses the system's local zsh through SwiftTerm's pseudoterminal implementation.
 
 ```mermaid
 flowchart LR
@@ -25,6 +25,8 @@ flowchart LR
 | `Sources/EyeTracking.swift` | Sixteen-direction selection, neutral zone, hysteresis, and the sample's visor mapping. |
 | `Sources/Geometry.swift` | Visible-screen layout, clamping, attached-terminal placement, bounded movement steps. |
 | `Sources/TerminalPanel.swift` | Native terminal view, terminal-output clipboard policy, transparent neon chrome, resize/pin/folder controls, process lifecycle. |
+| `Sources/PetVoiceControls.swift` | Hover visibility, reachable microphone/stop controls, and placement beside the sprite. |
+| `Sources/DictationController.swift` | On-device microphone transcription, temporary audio, live transcript revisions, cancellation, and finalized-text delivery. |
 | `Tests/DesktopTests.swift` | Native behavior and PTY checks. |
 
 ## Update loop
@@ -32,6 +34,8 @@ flowchart LR
 The app samples `NSEvent.mouseLocation` on the existing 30 Hz timer. It moves the pet when roaming is enabled and the user is not interacting with the pet or terminal. It updates animation and then gaze, so eyes keep responding when roaming pauses. Hidden pets and system sleep skip visible updates. There is no screen capture or global keyboard-event listener.
 
 Hit testing follows sprite alpha. In `directional` mode it uses the selected look frame's silhouette. In `visor` mode the compositor preserves the original alpha. Gaze textures are cached with a 64-entry limit.
+
+The independent nonactivating voice panel preserves sprite geometry and alpha-aware hit testing. A short hover grace period keeps its button reachable; voice interaction pauses roaming. On supported macOS 26 systems, AVAudioEngine supplies temporary audio to SpeechAnalyzer. Provisional words stay in a preview; finalized text passes through SwiftTerm's input delegate without an implicit Return. A session/foreground-process check prevents delayed recognition from inserting into a changed destination. See [dictation details](DICTATION.md).
 
 ## Terminal lifecycle
 
