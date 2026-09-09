@@ -14,11 +14,16 @@
 		29493BCBFAA02274B3B91529 /* spritesheet.webp in Resources */ = {isa = PBXBuildFile; fileRef = 6C6269FBED91DBB4C57185CE /* spritesheet.webp */; };
 		323E1CBB1EB2DD823B7E1321 /* EyeTracking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6C3AE81024EA383FA8C79B /* EyeTracking.swift */; };
 		344A38B467E7A696940A48FF /* Geometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D5AB28B3728B77D23C10D80 /* Geometry.swift */; };
+		368726D1A64AF7662DAED0A8 /* DictationInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51CB44C92057C636ABD88FCF /* DictationInputTests.swift */; };
 		43AA18FEFED6F96E7608E7D6 /* PetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89C714392F560D5C136F8D04 /* PetView.swift */; };
 		5FEC6B6F5E8B4C68337E4622 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 4208BF0DE56A96B0E9D5FEC2 /* AppIcon.icns */; };
 		72E148547A35319255F8815C /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = F06AB1E9C9ECC1294BFAC42E /* SwiftTerm */; };
+		85328FA39F89B89DCA8464EF /* PetVoiceControlsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DE8CED673D9AFD0366AAD9C /* PetVoiceControlsTests.swift */; };
 		920D78DE7AE80FAD04514120 /* PetDefinition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87127A87D8AC56F8F59ED97E /* PetDefinition.swift */; };
+		AE7702C63D608655097B06B9 /* DictationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE8DBF2B68A93890EF4388F0 /* DictationController.swift */; };
+		B16B8BB600ED7444747CC029 /* PetVoiceControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 391C5F0C9CFCBC0911554462 /* PetVoiceControls.swift */; };
 		C006F79A1437E76F961F49FC /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = 0E232D79B924F71C07C375A7 /* SwiftTerm */; };
+		E019BA9F522B3D3DA6C0B1CD /* DictationControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F789491450AE260571AFD0 /* DictationControllerTests.swift */; };
 		EDE02FA67FA8232B38A53A12 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6103B51FB1196B3DD3EE409 /* App.swift */; };
 /* End PBXBuildFile section */
 
@@ -35,18 +40,23 @@
 /* Begin PBXFileReference section */
 		094B3F3C72C4EEAD09890DEE /* TerminalPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPanel.swift; sourceTree = "<group>"; };
 		2C492DE50770C4F345B74630 /* SwiftTerm */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SwiftTerm; path = Vendor/SwiftTerm; sourceTree = SOURCE_ROOT; };
+		391C5F0C9CFCBC0911554462 /* PetVoiceControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetVoiceControls.swift; sourceTree = "<group>"; };
 		3EEB86A549335AA87A92727A /* PetTerminalTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PetTerminalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4208BF0DE56A96B0E9D5FEC2 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		4D5AB28B3728B77D23C10D80 /* Geometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Geometry.swift; sourceTree = "<group>"; };
+		51CB44C92057C636ABD88FCF /* DictationInputTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationInputTests.swift; sourceTree = "<group>"; };
 		52886A3AB599791BE904F412 /* pet.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = pet.json; sourceTree = "<group>"; };
 		6C6269FBED91DBB4C57185CE /* spritesheet.webp */ = {isa = PBXFileReference; path = spritesheet.webp; sourceTree = "<group>"; };
+		6DE8CED673D9AFD0366AAD9C /* PetVoiceControlsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetVoiceControlsTests.swift; sourceTree = "<group>"; };
 		87127A87D8AC56F8F59ED97E /* PetDefinition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetDefinition.swift; sourceTree = "<group>"; };
 		89C714392F560D5C136F8D04 /* PetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetView.swift; sourceTree = "<group>"; };
 		8D6C3AE81024EA383FA8C79B /* EyeTracking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EyeTracking.swift; sourceTree = "<group>"; };
+		A3F789491450AE260571AFD0 /* DictationControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationControllerTests.swift; sourceTree = "<group>"; };
 		A6103B51FB1196B3DD3EE409 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		A970C0CEF5C1B66E8A5F67D5 /* SwiftTerm-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SwiftTerm-LICENSE.txt"; sourceTree = "<group>"; };
 		B28C69E2F9295C897F4E4E6D /* PetTerminal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetTerminal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B896F96E758B3624790092C4 /* DesktopTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopTests.swift; sourceTree = "<group>"; };
+		DE8DBF2B68A93890EF4388F0 /* DictationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,10 +111,12 @@
 			isa = PBXGroup;
 			children = (
 				A6103B51FB1196B3DD3EE409 /* App.swift */,
+				DE8DBF2B68A93890EF4388F0 /* DictationController.swift */,
 				8D6C3AE81024EA383FA8C79B /* EyeTracking.swift */,
 				4D5AB28B3728B77D23C10D80 /* Geometry.swift */,
 				87127A87D8AC56F8F59ED97E /* PetDefinition.swift */,
 				89C714392F560D5C136F8D04 /* PetView.swift */,
+				391C5F0C9CFCBC0911554462 /* PetVoiceControls.swift */,
 				094B3F3C72C4EEAD09890DEE /* TerminalPanel.swift */,
 			);
 			path = Sources;
@@ -125,6 +137,9 @@
 			isa = PBXGroup;
 			children = (
 				B896F96E758B3624790092C4 /* DesktopTests.swift */,
+				A3F789491450AE260571AFD0 /* DictationControllerTests.swift */,
+				51CB44C92057C636ABD88FCF /* DictationInputTests.swift */,
+				6DE8CED673D9AFD0366AAD9C /* PetVoiceControlsTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -234,6 +249,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				164FCE12D0F2AA91D2D1244F /* DesktopTests.swift in Sources */,
+				E019BA9F522B3D3DA6C0B1CD /* DictationControllerTests.swift in Sources */,
+				368726D1A64AF7662DAED0A8 /* DictationInputTests.swift in Sources */,
+				85328FA39F89B89DCA8464EF /* PetVoiceControlsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,10 +260,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				EDE02FA67FA8232B38A53A12 /* App.swift in Sources */,
+				AE7702C63D608655097B06B9 /* DictationController.swift in Sources */,
 				323E1CBB1EB2DD823B7E1321 /* EyeTracking.swift in Sources */,
 				344A38B467E7A696940A48FF /* Geometry.swift in Sources */,
 				920D78DE7AE80FAD04514120 /* PetDefinition.swift in Sources */,
 				43AA18FEFED6F96E7608E7D6 /* PetView.swift in Sources */,
+				B16B8BB600ED7444747CC029 /* PetVoiceControls.swift in Sources */,
 				25E83E73957A8313B36487ED /* TerminalPanel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -265,6 +285,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = PetTerminal.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				INFOPLIST_FILE = Info.plist;
@@ -415,6 +436,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = PetTerminal.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

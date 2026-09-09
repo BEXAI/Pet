@@ -1,5 +1,7 @@
 # Validation
 
+The hover-dictation update passed **38 native XCTest cases** with zero failures on macOS 26.6.2 / Xcode 26.1.1 (Apple Silicon). The additions cover hover reachability and placement, speech cancellation and finalization, audio resampling, transcript revisions, session-safe insertion, and a real PTY check showing that dictated text is not submitted until Return is sent separately. A controlled, generated speech fixture also passed through the app's actual conversion/streaming pipeline and Apple's SpeechAnalyzer with the expected transcript. The automated checks did not record ambient microphone audio. Subsequent hands-on user testing confirmed the installed hover-dictation feature works; broader microphone-device and language coverage remains manual.
+
 The privacy update passed all **19 native XCTest cases** with zero failures on Xcode 26.1.1 (the initial starter had 17). Local shell scripts and first-party documentation links were also checked.
 
 The install helper was exercised with a destination containing spaces. The installed public app launched with its configured terminal theme and prompt, showed the floating pet with live gaze, and was quit independently of the existing personal companion. The Release bundle passed strict code-signature verification.
